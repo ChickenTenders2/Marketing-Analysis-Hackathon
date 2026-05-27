@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings('ignore')
@@ -133,12 +134,42 @@ cluster_profiles = df.groupby('Cluster')[all_vars].mean()
 cluster_profiles['Size'] = df['Cluster'].value_counts().sort_index()
 
 cluster_profiles.to_csv(Path(__file__).parent / 'cluster_profiles.csv')
+cluster_profiles.T.to_csv(Path(__file__).parent / 'final_cluster_means.csv')
 df.to_csv(Path(__file__).parent.parent / 'data' / 'data_with_clusters.csv', index=False)
 
 print(f"\nCluster sizes:\n{df['Cluster'].value_counts().sort_index()}")
 print(f"\nCluster profiles:\n{cluster_profiles.round(2)}")
 
-# -- Chart 2: Cluster heatmap --------------------------------------------------
+# -- Chart 2: PCA scatter plot ------------------------------------------------
+
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+df['PCA1'] = X_pca[:, 0]
+df['PCA2'] = X_pca[:, 1]
+
+var1 = pca.explained_variance_ratio_[0]
+var2 = pca.explained_variance_ratio_[1]
+
+palette = {0: CORAL, 1: BLUE, 2: GREY}
+
+fig, ax = plt.subplots(figsize=(10, 7))
+for cluster_id, color in palette.items():
+    mask = df['Cluster'] == cluster_id
+    ax.scatter(
+        df.loc[mask, 'PCA1'], df.loc[mask, 'PCA2'],
+        color=color, label=f'Cluster {cluster_id}',
+        s=50, alpha=0.7, zorder=3,
+    )
+ax.set_xlabel(f'Principal Component 1 ({var1:.1%} variance)', fontsize=11)
+ax.set_ylabel(f'Principal Component 2 ({var2:.1%} variance)', fontsize=11)
+ax.set_title(f'2D cluster map (PCA) — total variance explained: {var1+var2:.1%}',
+             fontsize=13, fontweight='500', pad=12)
+ax.legend(title='Cluster', fontsize=9, framealpha=0.8)
+print(f"PCA variance explained: PC1={var1:.1%}, PC2={var2:.1%}, total={var1+var2:.1%}")
+save(fig, CHARTS_DIR / 'chart2_pca_scatter.png')
+
+
+# -- Chart 3: Cluster heatmap --------------------------------------------------
 
 fig, ax = plt.subplots(figsize=(14, 6))
 sns.heatmap(
@@ -154,7 +185,7 @@ ax.set_xlabel('Variable', fontsize=11)
 ax.set_ylabel('Cluster', fontsize=11)
 ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha='right', fontsize=9)
 ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=10)
-save(fig, CHARTS_DIR / 'chart2_cluster_heatmap.png')
+save(fig, CHARTS_DIR / 'chart3_cluster_heatmap.png')
 
 # -- Key findings --------------------------------------------------------------
 
