@@ -26,29 +26,8 @@ print(f"Data loaded: {df.shape[0]} rows, {df.shape[1]} cols")
 CHARTS_DIR = Path(__file__).parent / 'charts'
 CHARTS_DIR.mkdir(exist_ok=True)
 
-NAVY  = '#1B2A4A'
-BLUE  = '#2E6FD9'
-CORAL = '#E8543A'
-SLATE = '#F5F7FA'
-GREY  = '#8FA3BF'
-
-plt.rcParams.update({
-    'font.family':        'DejaVu Sans',
-    'axes.facecolor':     SLATE,
-    'figure.facecolor':   'white',
-    'axes.spines.top':    False,
-    'axes.spines.right':  False,
-    'axes.spines.left':   False,
-    'axes.spines.bottom': False,
-    'axes.grid':          True,
-    'grid.color':         'white',
-    'grid.linewidth':     1.2,
-    'axes.labelcolor':    NAVY,
-    'axes.titlecolor':    NAVY,
-    'xtick.color':        GREY,
-    'ytick.color':        GREY,
-    'text.color':         NAVY,
-})
+sns.set_context('talk')
+sns.set_style('whitegrid')
 
 
 def save(fig, name):
@@ -95,39 +74,32 @@ print(f"  Difference:                              Δr = {r_high - r_low:.2f}")
 
 # -- Chart 1: Relationship correlation heatmap ---------------------------------
 
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, ax = plt.subplots(figsize=(10, 8))
 sns.heatmap(
     corr_matrix, annot=True, fmt='.2f',
-    cmap=sns.diverging_palette(220, 20, as_cmap=True),
-    center=0, vmin=-1, vmax=1,
-    linewidths=2, linecolor='white',
-    annot_kws={'size': 12, 'weight': '500', 'color': NAVY},
-    ax=ax, square=True, cbar_kws={'shrink': 0.7},
+    cmap='Reds', linewidths=0.5, linecolor='white',
+    ax=ax, square=True,
 )
-ax.set_title('Relationship map — IV → Mediator → DV',
-             fontsize=13, fontweight='500', pad=12)
-ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha='right', fontsize=10)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=10)
+ax.set_title('Relationship Map: IV -> Mediator -> DV')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
 save(fig, CHARTS_DIR / 'chart1_relationship_correlation.png')
 
 # -- Chart 2: Moderation bar chart ---------------------------------------------
 
-fig, ax = plt.subplots(figsize=(7, 5))
+fig, ax = plt.subplots(figsize=(8, 5))
 groups = ['High Privacy\nConcern', 'Low Privacy\nConcern']
 values = [r_high, r_low]
-colors = [CORAL if v > 0 else BLUE for v in values]
 
-bars = ax.bar(groups, values, color=colors, width=0.45, zorder=3)
-ax.axhline(0, color=GREY, linewidth=1.2, linestyle='--', zorder=2)
-ax.set_ylabel('Correlation: Overload → Print_Trust', fontsize=11)
-ax.set_title('Privacy Concern moderates the Overload → Trust path',
-             fontsize=13, fontweight='500', pad=12)
-ax.set_ylim(-0.2, 0.2)
+bars = ax.bar(groups, values, color=['#1f77b4', '#aec7e8'], width=0.45)
+ax.axhline(0, color='grey', linewidth=1, linestyle='--')
+ax.set_ylabel('Correlation: Overload -> Print_Trust')
+ax.set_title('Moderation Effect of Privacy Concern')
+ax.set_ylim(-0.2, 0.25)
 for bar, val in zip(bars, values):
     ax.text(bar.get_x() + bar.get_width() / 2,
-            val + (0.008 if val >= 0 else -0.015),
-            f'r = {val:.2f}', ha='center', va='bottom',
-            fontsize=11, fontweight='500', color=NAVY)
+            val + (0.008 if val >= 0 else -0.02),
+            f'r = {val:.2f}', ha='center', va='bottom')
 save(fig, CHARTS_DIR / 'chart2_moderation_bar.png')
 
 # -- Key findings --------------------------------------------------------------

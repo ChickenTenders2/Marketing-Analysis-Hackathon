@@ -65,29 +65,8 @@ print(f"Data loaded: {df.shape[0]} rows, {df.shape[1]} cols")
 CHARTS_DIR = Path(__file__).parent / 'charts'
 CHARTS_DIR.mkdir(exist_ok=True)
 
-NAVY  = '#1B2A4A'
-BLUE  = '#2E6FD9'
-CORAL = '#E8543A'
-SLATE = '#F5F7FA'
-GREY  = '#8FA3BF'
-
-plt.rcParams.update({
-    'font.family':        'DejaVu Sans',
-    'axes.facecolor':     SLATE,
-    'figure.facecolor':   'white',
-    'axes.spines.top':    False,
-    'axes.spines.right':  False,
-    'axes.spines.left':   False,
-    'axes.spines.bottom': False,
-    'axes.grid':          True,
-    'grid.color':         'white',
-    'grid.linewidth':     1.2,
-    'axes.labelcolor':    NAVY,
-    'axes.titlecolor':    NAVY,
-    'xtick.color':        GREY,
-    'ytick.color':        GREY,
-    'text.color':         NAVY,
-})
+sns.set_context('talk')
+sns.set_style('whitegrid')
 
 
 def save(fig, name):
@@ -106,23 +85,18 @@ X_scaled = scaler.fit_transform(X)
 # -- Chart 1: Elbow plot -------------------------------------------------------
 
 inertias = []
-k_range = range(2, 9)
+k_range = range(2, 11)
 for k in k_range:
     km = KMeans(n_clusters=k, init='k-means++', random_state=42, n_init=10)
     km.fit(X_scaled)
     inertias.append(km.inertia_)
 
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot(list(k_range), inertias, marker='o', linewidth=2.2,
-        color=BLUE, markersize=8, zorder=4)
-ax.fill_between(list(k_range), inertias, alpha=0.1, color=BLUE)
-ax.axvline(3, color=CORAL, linewidth=1.5, linestyle='--', zorder=3,
-           label='Chosen k = 3')
-ax.set_xlabel('Number of clusters (k)', fontsize=11)
-ax.set_ylabel('Inertia (within-cluster sum of squares)', fontsize=11)
-ax.set_title('Elbow plot — choosing optimal k for K-Means',
-             fontsize=13, fontweight='500', pad=12)
-ax.legend(fontsize=9, framealpha=0.8)
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(list(k_range), inertias, marker='o', linewidth=2,
+        color='#1f77b4', markersize=7, linestyle='--')
+ax.set_xlabel('Number of Clusters (k)')
+ax.set_ylabel('WCSS')
+ax.set_title('Elbow Method')
 save(fig, CHARTS_DIR / 'chart1_elbow.png')
 
 # -- Fit final model (k=3) -----------------------------------------------------
@@ -150,41 +124,32 @@ df['PCA2'] = X_pca[:, 1]
 var1 = pca.explained_variance_ratio_[0]
 var2 = pca.explained_variance_ratio_[1]
 
-palette = {0: CORAL, 1: BLUE, 2: GREY}
-
 fig, ax = plt.subplots(figsize=(10, 7))
-for cluster_id, color in palette.items():
-    mask = df['Cluster'] == cluster_id
-    ax.scatter(
-        df.loc[mask, 'PCA1'], df.loc[mask, 'PCA2'],
-        color=color, label=f'Cluster {cluster_id}',
-        s=50, alpha=0.7, zorder=3,
-    )
-ax.set_xlabel(f'Principal Component 1 ({var1:.1%} variance)', fontsize=11)
-ax.set_ylabel(f'Principal Component 2 ({var2:.1%} variance)', fontsize=11)
-ax.set_title(f'2D cluster map (PCA) — total variance explained: {var1+var2:.1%}',
-             fontsize=13, fontweight='500', pad=12)
-ax.legend(title='Cluster', fontsize=9, framealpha=0.8)
+sns.scatterplot(
+    x='PCA1', y='PCA2', hue='Cluster', data=df,
+    palette='viridis', s=60, alpha=0.7, ax=ax,
+)
+ax.set_xlabel(f'Principal Component 1 ({var1:.1%} variance)')
+ax.set_ylabel(f'Principal Component 2 ({var2:.1%} variance)')
+ax.set_title('2D Cluster Map (PCA Analysis)')
+ax.legend(title='Cluster')
 print(f"PCA variance explained: PC1={var1:.1%}, PC2={var2:.1%}, total={var1+var2:.1%}")
 save(fig, CHARTS_DIR / 'chart2_pca_scatter.png')
 
 
 # -- Chart 3: Cluster heatmap --------------------------------------------------
 
-fig, ax = plt.subplots(figsize=(14, 6))
+fig, ax = plt.subplots(figsize=(14, 8))
 sns.heatmap(
     cluster_profiles[all_vars], annot=True, fmt='.2f',
-    cmap=sns.light_palette(CORAL, as_cmap=True),
-    linewidths=2, linecolor='white',
-    annot_kws={'size': 10, 'weight': '500', 'color': NAVY},
-    ax=ax, cbar_kws={'shrink': 0.6},
+    cmap='Reds', linewidths=0.5, linecolor='white',
+    ax=ax,
 )
-ax.set_title('Segment persona heatmap — mean scores by cluster',
-             fontsize=13, fontweight='500', pad=12)
-ax.set_xlabel('Variable', fontsize=11)
-ax.set_ylabel('Cluster', fontsize=11)
-ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha='right', fontsize=9)
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=10)
+ax.set_title('Segment Persona Heatmap (Semantic Variables)')
+ax.set_xlabel('')
+ax.set_ylabel('Cluster')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
 save(fig, CHARTS_DIR / 'chart3_cluster_heatmap.png')
 
 # -- Key findings --------------------------------------------------------------
